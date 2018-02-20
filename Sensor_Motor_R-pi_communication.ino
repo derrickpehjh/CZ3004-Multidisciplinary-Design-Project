@@ -1,35 +1,3 @@
-
-
-
-/*
- * getDistance
- *
- * Example of using SharpIR library to calculate the distance beetween the sensor and an obstacle
- *
- * Created by Giuseppe Masino, 15 June 2016
- * Author URL http://www.facebook.com/dev.hackerinside
- * GitHub URL http://github.com/HackerInside0/Arduino_SharpIR
- *
- * -----------------------------------------------------------------------------------
- *
- * Things that you need:
- * - Arduino
- * - A Sharp IR Sensor
- *
- *
- * The circuit:
- * - Arduino 5V -> Sensor's pin 1 (Vcc)
- * - Arduino GND -> Sensor's pin 2 (GND)
- * - Arduino pin A0 -> Sensor's pin 3 (Output)
- * 
- *
- * See the Sharp sensor datasheet for the pin reference, the pin configuration is the same for all models.
- * There is the datasheet for the model GP2Y0A41SK0F:
- * 
- * http://www.robotstore.it/open2b/var/product-files/78.pdf
- *
- */
-
 //import the library in the sketch
 #include <DualVNH5019MotorShield.h>
 #include <RunningMedian.h>
@@ -62,6 +30,7 @@ void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
   md.init();
+  
 }
 
 // the loop routine runs over and over again forever:
