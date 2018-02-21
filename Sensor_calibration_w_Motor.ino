@@ -53,25 +53,20 @@ void loop()
 
 		 		case 'F':   							//Command to move forward 1 grid 
 		          		{ 
-		          			md.setSpeeds(-200,200);
-		            		while (getObstacleGridsAwayFM() !=1);
-		            		md.setBrakes(400,400);
-		            		break;
+		          			moveForwardGridRamp(command[stringIndex]);
+		          			break;	
 		          		}
 
 		 		case 'L':								//Command to move rotate left 90 degrees
 		         		{
-		           			md.setSpeeds(200,200);
-		           			delay(1500);
-		           			md.setBrakes(400,400);
+		         			//turnLeft();
+		           			break;
 		          		}
 
 		        case 'R':   							//Command to move rotate right 90 degrees		
 		          		{ 
-		          			md.setSpeeds(-200,-200);
-		            		while (getObstacleGridsAwayFM() !=1);
-		            		md.setBrakes(400,400);
-		            		break;
+		          			//turnRight();
+		          			break;
 		            	}
 
 		        case 'C' :								//Command to callibrate robot before starting movement
@@ -80,7 +75,7 @@ void loop()
 				            break;
 				         }
 
-        		case 'X' :         						//Command to move proceed with fastest path
+        		case 'X' :         						//Command to proceed with fastest path
           				{
             				
             				break;
@@ -107,7 +102,16 @@ void loop()
 	}
 }
 
-float readSensor(int IRpin, int model) {
+void moveForwardGridRamp(int grids)  						//for exploration
+{  
+
+	//setSpeed 			Move forward 1 grid and brake
+  	readAllSensors(); 	//Read Sensor
+}
+
+
+float readSensor(int IRpin, int model) 
+{
   float sensorValue = analogRead(IRpin);
   float distance;
   if (model == 1080)  //for 10-80cm sensor
@@ -117,22 +121,25 @@ float readSensor(int IRpin, int model) {
   return distance;
 }
 
-float getMedianDistance(int IRpin, int model) {   //read each sensor ~5msec
-  RunningMedian samples = RunningMedian(9);       //take 9 samples of sensor reading
+float getMedianDistance(int IRpin, int model) 
+{   			
+  RunningMedian samples = RunningMedian(9);       			//take 9 samples of sensor reading
   for (int i = 0; i < 9; i ++)
-    samples.add(readSensor(IRpin, model));    //samples call readSensor() to read in sensor value
+    samples.add(readSensor(IRpin, model));    				//samples call readSensor() to read in sensor value
   return samples.getMedian();
 }
 
-int getObstacleGridsAwayFL() {   //front left sensor
+int getObstacleGridsAwayFL() 
+{
   int distance = getMedianDistance(front_left_sensor_pin, 1080);
-  if (distance < 18)        return 1;    //if the distance is less than 1 grid away from the obstacle, return 1
-  else if (distance < 28)   return 2;	 //if the distance is less than 2 grid away from the obstacle, return 2
-  else if (distance < 38)   return 3;	 //if the distance is less than 3 grid away from the obstacle, return 3
-  else return 0;						 //if the distance is more than4 grid away from the obstacle, return 0
+  if (distance < 18)        return 1;    					//if the distance is less than 1 grid away from the obstacle, return 1
+  else if (distance < 28)   return 2;	 					//if the distance is less than 2 grid away from the obstacle, return 2
+  else if (distance < 38)   return 3;						//if the distance is less than 3 grid away from the obstacle, return 3
+  else return 0;						 					//if the distance is more than4 grid away from the obstacle, return 0
 }
 
-int getObstacleGridsAwayFR() {   //front right sensor
+int getObstacleGridsAwayFR() 
+{
   int distance = getMedianDistance(front_right_sensor_pin, 1080);
   if (distance < 17)        return 1;
   else if (distance < 29)   return 2;
@@ -140,7 +147,8 @@ int getObstacleGridsAwayFR() {   //front right sensor
   else return 0;
 }
 
-int getObstacleGridsAwayFM() {   //front middle sensor
+int getObstacleGridsAwayFM() 
+{
   int distance = getMedianDistance(front_middle_sensor_pin, 1080);
   if (distance < 18)        return 1;
   else if (distance < 29)   return 2;
@@ -148,7 +156,8 @@ int getObstacleGridsAwayFM() {   //front middle sensor
   else return 0;
 }
 
-int getObstacleGridsAwayLF() {   //left front sensor
+int getObstacleGridsAwayLF() 
+{  
   int distance = getMedianDistance(left_front_sensor_pin, 1080);
   if (distance < 18)        return 1;
   else if (distance < 28)   return 2;
@@ -156,7 +165,8 @@ int getObstacleGridsAwayLF() {   //left front sensor
   else return 0;
 }
 
-int getObstacleGridsAwayLB() {   //left back sensor
+int getObstacleGridsAwayLB() 
+{  
   int distance = getMedianDistance(left_back_sensor_pin, 1080);
   if (distance < 17)        return 1;
   else if (distance < 27)   return 2;
@@ -164,7 +174,8 @@ int getObstacleGridsAwayLB() {   //left back sensor
   else return 0;
 }
 
-int getObstacleGridsAwayR() {   //long range sensor
+int getObstacleGridsAwayR() 
+{ 
   int distance = getMedianDistance(right_front_long_range_sensor_pin, 20150);
   if (distance < 28)        return 1; //20
   else if (distance < 35)   return 2; //30
@@ -174,7 +185,8 @@ int getObstacleGridsAwayR() {   //long range sensor
 }
 
 //FR:FM:FL:LF:LB:R
-void readAllSensors() {      
+void readAllSensors() 
+{      
   stringToSend += getObstacleGridsAwayFR();
   stringToSend += ":";
   stringToSend += getObstacleGridsAwayFM();
@@ -199,8 +211,8 @@ void readAllSensors() {
 //For checklist To get distance w.r.t robot (not sensor)
 //First minus = offset from sensor to robot
 //Second minus == sensor inaccuracy offset
-void getDistanceFromRobot(){ 
-
+void getDistanceFromRobot()
+{ 
 int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 6 - 2;
   Serial.print("Distance for front_right_sensor: ");
   Serial.println(distance0);
