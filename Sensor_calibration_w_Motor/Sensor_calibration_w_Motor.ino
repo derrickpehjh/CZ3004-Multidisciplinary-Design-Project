@@ -49,21 +49,21 @@ void loop()
 		 		    case 'F':   							//Command to move forward 1 grid 
 		          		{ 
 		          			moveForwardGridRamp(command[stringIndex]);
-                    readAllSensors(); 
+		          			readAllSensors(); 
 		          			break;	
 		          		}
 
 		 		    case 'L':								//Command to move rotate left 90 degrees
 		         		  {
 		         			  //turnLeft();
-                    readAllSensors(); 
-		           			break;
+		         			  readAllSensors();
+		         			  break;
 		          		}
 
 		        case 'R':   							//Command to move rotate right 90 degrees		
 		          		{ 
 		          			//turnRight();
-                    readAllSensors(); 
+		          			readAllSensors(); 
 		          			break;
 		            	}
 
