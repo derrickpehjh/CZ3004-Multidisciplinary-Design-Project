@@ -6,9 +6,6 @@ DualVNH5019MotorShield md;
 #define motor_encoder_left 3      //left motor
 #define motor_encoder_right 11    //right motor
 
-
-//Create a new instance of the library
-//Call the sensor "sensor"
 //the model of the short range sensor is "GP2Y0A21YK0F"
 //The model of the long range sensor is "GP2Y0A20YK0F"
 
@@ -49,8 +46,6 @@ void loop()
 	    {  
 	     	switch (command[stringIndex]) 				//Switch-case multiple scenarios, handle diff poss scenario inputs.
 	     	{       		
-
-
 		 		    case 'F':   							//Command to move forward 1 grid 
 		          		{ 
 		          			moveForwardGridRamp(command[stringIndex]);
@@ -60,13 +55,15 @@ void loop()
 
 		 		    case 'L':								//Command to move rotate left 90 degrees
 		         		  {
-		         			//turnLeft();
+		         			  //turnLeft();
+                    readAllSensors(); 
 		           			break;
 		          		}
 
 		        case 'R':   							//Command to move rotate right 90 degrees		
 		          		{ 
 		          			//turnRight();
+                    readAllSensors(); 
 		          			break;
 		            	}
 
@@ -78,7 +75,7 @@ void loop()
 
         		case 'X' :         						//Command to proceed with fastest path
           				{
-            				
+            				//Enable FastestPath()
             				break;
           				}
 
@@ -93,11 +90,9 @@ void loop()
 	            			Serial.println("from arduino:invalid command");
 	            			break;
 	          			}
-
 		    }
 		    stringIndex++;
 		  } 											
-
 	 	stringIndex = 0;
 	  	command = "";
 	}
@@ -204,11 +199,10 @@ void readAllSensors()
   stringToSend = "";
 }
 
-
-
 void calibrateBeforeExploration() {
- while( getMedianDistance(left_front_sensor_pin, 1080) != getMedianDistance(left_back_sensor_pin, 1080))
- 	{
+  //Method to check if there is a wll. If there is then align. If not then do nth;
+ while( getMedianDistance(left_front_sensor_pin, 1080) != getMedianDistance(left_back_sensor_pin, 1080)) //Either compare distance between sensors and obstacle                                                                                                   
+ 	{                                                                                                      //  or comapre distance between 2 sensors
  		//Do callibration by moving motor values using trigonometry
  	}
 }
@@ -220,7 +214,7 @@ void calibrateBeforeExploration() {
 //Second minus == sensor inaccuracy offset
 void getDistanceFromRobot()
 { 
-int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 6 - 2;
+  int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 6 - 2;
   Serial.print("Distance for front_right_sensor: ");
   Serial.println(distance0);
   
@@ -242,9 +236,9 @@ int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 6 - 2;
   Serial.println(distance4);
   
 
-   int distance5 = getMedianDistance(right_front_long_range_sensor_pin,20150) - 11;
-   Serial.print("Distance for right_front_long_range_sensor: ");
-   Serial.println(distance5);
+  int distance5 = getMedianDistance(right_front_long_range_sensor_pin,20150) - 11;
+  Serial.print("Distance for right_front_long_range_sensor: ");
+  Serial.println(distance5);
    
    delay(2000);
 }
