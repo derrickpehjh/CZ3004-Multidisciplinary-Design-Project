@@ -51,14 +51,15 @@ void loop()
 	     	{       		
 
 
-		 		case 'F':   							//Command to move forward 1 grid 
+		 		    case 'F':   							//Command to move forward 1 grid 
 		          		{ 
 		          			moveForwardGridRamp(command[stringIndex]);
+                    readAllSensors(); 
 		          			break;	
 		          		}
 
-		 		case 'L':								//Command to move rotate left 90 degrees
-		         		{
+		 		    case 'L':								//Command to move rotate left 90 degrees
+		         		  {
 		         			//turnLeft();
 		           			break;
 		          		}
@@ -70,10 +71,10 @@ void loop()
 		            	}
 
 		        case 'C' :								//Command to callibrate robot before starting movement
-				         {
-				           
+				          {
+				            calibrateBeforeExploration();
 				            break;
-				         }
+				          }
 
         		case 'X' :         						//Command to proceed with fastest path
           				{
@@ -81,7 +82,7 @@ void loop()
             				break;
           				}
 
-          		case 'S' :         						//Command to move read sensors to get distance (Checklist)
+          	case 'S' :         						//Command to move read sensors to get distance (Checklist)
           				{
             				getDistanceFromRobot();
             				break;
@@ -95,7 +96,7 @@ void loop()
 
 		    }
 		    stringIndex++;
-		} 											
+		  } 											
 
 	 	stringIndex = 0;
 	  	command = "";
@@ -104,11 +105,12 @@ void loop()
 
 void moveForwardGridRamp(int grids)  						//for exploration
 {  
-
-	//setSpeed 			Move forward 1 grid and brake
-  	readAllSensors(); 	//Read Sensor
+  //Move Forward 1 grid and brake
+  //Test codes for distance
+  md.setSpeeds(-200,200);
+	while(getObstacleGridsAwayFM() != 1);
+	md.setBrakes(400,400);
 }
-
 
 float readSensor(int IRpin, int model) 
 {
@@ -204,7 +206,12 @@ void readAllSensors()
 
 
 
-
+void calibrateBeforeExploration() {
+ while( getMedianDistance(left_front_sensor_pin, 1080) != getMedianDistance(left_back_sensor_pin, 1080))
+ 	{
+ 		//Do callibration by moving motor values using trigonometry
+ 	}
+}
 
 
 
