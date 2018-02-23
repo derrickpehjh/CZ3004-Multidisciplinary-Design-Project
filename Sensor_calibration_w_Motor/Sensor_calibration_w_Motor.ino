@@ -24,7 +24,7 @@ DualVNH5019MotorShield md;
 String stringToSend, command;
 char character;
 volatile int encoder_R_value = 0 , encoder_L_value = 0 ;
-int stringIndex, tickError, error = 0;
+int stringIndex, tickError, error, grids = 0;
 
 
 void setup()
@@ -56,9 +56,7 @@ void loop()
 	     	{       		
 		 		    case 'F':   							//Command to move forward 1 grid 
 		          		{ 
-                    Serial.println(command[stringIndex]);
-		          			moveForwardGridRamp(command[stringIndex]);
-		          			readAllSensors(); 
+		          			moveForwardGridRamp();
 		          			break;	
 		          		}
 
@@ -116,18 +114,19 @@ void loop()
 	            			break;
 	          			}
 		    }
-		    stringIndex++;
+       stringIndex++;
 		  } 											
 	 	stringIndex = 0;
 	  	command = "";
 	}
 }
 
-void moveForwardGridRamp(int grids)  						//for exploration
+void moveForwardGridRamp()  						//for exploration
 {  
- 
-  forward(525,400);
-  md.setBrakes(400,400);
+    forward(500,400);
+    md.setBrakes(400,400);
+    delay(100);
+    readAllSensors(); 
 }
 
 void forward(int value, int Speed)
@@ -201,19 +200,71 @@ float getMedianDistance(int IRpin, int model)
 {   			
   RunningMedian samples = RunningMedian(9);       			//take 9 samples of sensor reading
   for (int i = 0; i < 9; i ++)
-    samples.add(readSensor(IRpin, model));    				//samples call readSensor() to read in sensor value
+   samples.add(readSensor(IRpin, model));    				//samples call readSensor() to read in sensor value
 
+ int median = samples.getMedian();
+
+  if(IRpin == front_right_sensor_pin)
+    {
+      median = median -5;
+      if(median <= 14) return median-1;
+      else if(median <= 23) return median-1;      
+      else if(median <= 33) return median;  
+      else if(median <= 43) return median+2;
+      else if(median <= 53) return median+4;
+    }
+  
+  if(IRpin == front_middle_sensor_pin)
+    {
+      median = median -5;
+      if(median <= 14) return median-2;
+      else if(median <= 23) return median-2;
+      else if(median <= 33) return median-2;
+      else if(median <= 43) return median; 
+      else if(median <= 53) return median;
+    }
+  
+  if(IRpin == front_left_sensor_pin)
+    {
+      median = median -5;
+      if(median <= 14) return median-1;
+      else if(median <= 23) return median; 
+      else if(median <= 33) return median;
+      else if(median <= 43) return median+2; 
+      else if(median <= 53) return median;      
+    }
+
+  if(IRpin == left_front_sensor_pin)
+    {
+      median = median -5;
+      if(median <= 14) return median;
+      else if(median <= 23) return median; 
+      else if(median <= 33) return median+3;
+      else if(median <= 43) return median+10; 
+      else if(median <= 53) return median + 19;      
+    }
+
+   if(IRpin == left_back_sensor_pin)
+    {
+      median = median -5;
+      if(median <= 14) return median;
+      else if(median <= 23) return median; 
+      else if(median <= 33) return median+2;
+      else if(median <= 43) return median; 
+      else if(median <= 53) return median;      
+    }
+  
   if(IRpin == right_front_long_range_sensor_pin)
-  {
-    if(samples.getMedian()< 20) return samples.getMedian() + 1;
-    else if(samples.getMedian()< 33) return samples.getMedian() - 1;
-    else if(samples.getMedian()< 43) return samples.getMedian() - 1;
-    else if(samples.getMedian()< 47) return samples.getMedian() + 4 ;
-//    else if(samples.getMedian()< 52) return samples.getMedian() + 9;
-  }
-
-    
-  return samples.getMedian();
+    {
+      median = median -9;
+      if(median <= 23) return median+1;
+      else if(median <= 34) return median-2; 
+      else if(median <= 42) return median;
+      else if(median <= 47) return median + 7; 
+      else if(median <= 58) return median + 10; 
+      else if(median <= 70) return median + 3; 
+    }
+  return median;
 }
 
 int getObstacleGridsAwayFL() 
@@ -307,29 +358,29 @@ void calibrateBeforeExploration() {
 //Second minus == sensor inaccuracy offset
 void getDistanceFromRobot()
 { 
-  int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 5 - 1;
+  int distance0 = getMedianDistance(front_right_sensor_pin,1080);
   Serial.print("Distance for front_right_sensor: ");
   Serial.println(distance0);
   
-  int distance1 = getMedianDistance(front_middle_sensor_pin,1080) - 5 - 2;
+  int distance1 = getMedianDistance(front_middle_sensor_pin,1080);
   Serial.print("Distance for front_middle_sensor: ");
   Serial.println(distance1);
   
-  int distance2 = getMedianDistance(front_left_sensor_pin,1080) - 5 - 1;
+  int distance2 = getMedianDistance(front_left_sensor_pin,1080);
   Serial.print("Distance for front_left_sensor: ");
   Serial.println(distance2);
 
   
-  int distance3 = getMedianDistance(left_front_sensor_pin,1080) - 5 - 2;
+  int distance3 = getMedianDistance(left_front_sensor_pin,1080);
   Serial.print("Distance for left_front_sensor: ");
   Serial.println(distance3);
   
-  int distance4 = getMedianDistance(left_back_sensor_pin,1080) - 5 - 2;
+  int distance4 = getMedianDistance(left_back_sensor_pin,1080);
   Serial.print("Distance for left_back_sensor: ");
   Serial.println(distance4);
   
 
-  int distance5 = getMedianDistance(right_front_long_range_sensor_pin,20150) - 9;
+  int distance5 = getMedianDistance(right_front_long_range_sensor_pin,20150);
   Serial.print("Distance for right_front_long_range_sensor: ");
   Serial.println(distance5);
    
