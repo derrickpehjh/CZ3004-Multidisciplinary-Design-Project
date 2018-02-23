@@ -1,6 +1,7 @@
 //import the library in the sketch
 #include <DualVNH5019MotorShield.h>
 #include <RunningMedian.h>
+#include <EnableInterrupt.h>
 
 DualVNH5019MotorShield md;
 #define motor_encoder_left 3      //left motor
@@ -15,16 +16,23 @@ DualVNH5019MotorShield md;
 #define left_front_sensor_pin 3  //MDP BOARD PIN PS4
 #define left_back_sensor_pin 4  //MDP BOARD PIN PS5
 #define right_front_long_range_sensor_pin 5 //MDP BOARD PIN PS6
+#define motor_encoder_left 3      //left motor
+#define motor_encoder_right 11    //right motor
 
 
 //---------------Declare variables--------------------------
 String stringToSend, command;
-int stringIndex = 0;
 char character;
+volatile int encoder_R_value = 0 , encoder_L_value = 0 ;
+int stringIndex, tickError, error = 0;
 
 
 void setup()
 {
+  pinMode(motor_encoder_right, INPUT);
+  pinMode(motor_encoder_left, INPUT);
+  enableInterrupt(motor_encoder_left, LeftEncoderInc, CHANGE);
+  enableInterrupt(motor_encoder_right, RightEncoderInc, CHANGE);
   Serial.begin(9600); //Enable the serial comunication
   md.init();
 }
@@ -48,6 +56,7 @@ void loop()
 	     	{       		
 		 		    case 'F':   							//Command to move forward 1 grid 
 		          		{ 
+                    Serial.println(command[stringIndex]);
 		          			moveForwardGridRamp(command[stringIndex]);
 		          			readAllSensors(); 
 		          			break;	
@@ -56,6 +65,7 @@ void loop()
 		 		    case 'L':								//Command to move rotate left 90 degrees
 		         		  {
 		         			  left(725,150);
+                    md.setBrakes(400,400);
 		         			  readAllSensors();
 		         			  break;
 		          		}
@@ -63,6 +73,7 @@ void loop()
 		        case 'R':   							//Command to move rotate right 90 degrees		
 		          		{ 
 		          			right(725,150);
+                    md.setBrakes(400,400);
 		          			readAllSensors(); 
 		          			break;
 		            	}
@@ -70,6 +81,7 @@ void loop()
             case 'B':                 //Command to move rotate right 90 degrees   
                   { 
                     backward(525,400);
+                    md.setBrakes(400,400);
                     readAllSensors(); 
                     break;
                   }
@@ -92,6 +104,11 @@ void loop()
             				getDistanceFromRobot();
             				break;
           				}
+            case 'A':                     //Command to test Arduino (Checklist)
+                  {
+                    Serial.println("B");
+                    break;
+                  }
 
 		        default:
 	          			{
@@ -108,8 +125,9 @@ void loop()
 
 void moveForwardGridRamp(int grids)  						//for exploration
 {  
-  //Move Forward 1 grid and brake
-  forward(525,400):
+ 
+  forward(525,400);
+  md.setBrakes(400,400);
 }
 
 void forward(int value, int Speed)
@@ -148,6 +166,26 @@ void backward(int value, int Speed)
     }
 }
 
+double tuneWithPID() {
+  error = encoder_R_value - encoder_L_value;
+  //Serial.print("error: ");
+  //Serial.println(error);
+  return error;
+}
+
+void LeftEncoderInc() {
+  encoder_L_value++;
+}
+
+void RightEncoderInc() {
+  encoder_R_value++;
+}
+
+void resetEncoderValues() {
+  encoder_R_value = 0;
+  encoder_L_value = 0;
+}
+
 float readSensor(int IRpin, int model) 
 {
   float sensorValue = analogRead(IRpin);
@@ -164,6 +202,17 @@ float getMedianDistance(int IRpin, int model)
   RunningMedian samples = RunningMedian(9);       			//take 9 samples of sensor reading
   for (int i = 0; i < 9; i ++)
     samples.add(readSensor(IRpin, model));    				//samples call readSensor() to read in sensor value
+
+  if(IRpin == right_front_long_range_sensor_pin)
+  {
+    if(samples.getMedian()< 20) return samples.getMedian() + 1;
+    else if(samples.getMedian()< 33) return samples.getMedian() - 1;
+    else if(samples.getMedian()< 43) return samples.getMedian() - 1;
+    else if(samples.getMedian()< 47) return samples.getMedian() + 4 ;
+//    else if(samples.getMedian()< 52) return samples.getMedian() + 9;
+  }
+
+    
   return samples.getMedian();
 }
 
@@ -258,29 +307,29 @@ void calibrateBeforeExploration() {
 //Second minus == sensor inaccuracy offset
 void getDistanceFromRobot()
 { 
-  int distance0 = getMedianDistance(front_right_sensor_pin,1080) -2 - 6;
+  int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 5 - 1;
   Serial.print("Distance for front_right_sensor: ");
   Serial.println(distance0);
   
-  int distance1 = getMedianDistance(front_middle_sensor_pin,1080) - 6 - 2;
+  int distance1 = getMedianDistance(front_middle_sensor_pin,1080) - 5 - 2;
   Serial.print("Distance for front_middle_sensor: ");
   Serial.println(distance1);
   
-  int distance2 = getMedianDistance(front_left_sensor_pin,1080) - 6 - 2;
+  int distance2 = getMedianDistance(front_left_sensor_pin,1080) - 5 - 1;
   Serial.print("Distance for front_left_sensor: ");
   Serial.println(distance2);
 
   
-  int distance3 = getMedianDistance(left_front_sensor_pin,1080) - 6 - 2;
+  int distance3 = getMedianDistance(left_front_sensor_pin,1080) - 5 - 2;
   Serial.print("Distance for left_front_sensor: ");
   Serial.println(distance3);
   
-  int distance4 = getMedianDistance(left_back_sensor_pin,1080) - 6 - 2;
+  int distance4 = getMedianDistance(left_back_sensor_pin,1080) - 5 - 2;
   Serial.print("Distance for left_back_sensor: ");
   Serial.println(distance4);
   
 
-  int distance5 = getMedianDistance(right_front_long_range_sensor_pin,20150) - 11;
+  int distance5 = getMedianDistance(right_front_long_range_sensor_pin,20150) - 9;
   Serial.print("Distance for right_front_long_range_sensor: ");
   Serial.println(distance5);
    
