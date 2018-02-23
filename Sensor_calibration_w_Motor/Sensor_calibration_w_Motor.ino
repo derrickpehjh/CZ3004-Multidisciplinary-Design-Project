@@ -63,6 +63,7 @@ void loop()
 		 		    case 'L':								//Command to move rotate left 90 degrees
 		         		  {
 		         			  left(725,150);
+                    delay(100);
                     md.setBrakes(400,400);
 		         			  readAllSensors();
 		         			  break;
@@ -71,6 +72,7 @@ void loop()
 		        case 'R':   							//Command to move rotate right 90 degrees		
 		          		{ 
 		          			right(725,150);
+                    delay(100);
                     md.setBrakes(400,400);
 		          			readAllSensors(); 
 		          			break;
@@ -79,6 +81,7 @@ void loop()
             case 'B':                 //Command to move rotate right 90 degrees   
                   { 
                     backward(525,400);
+                    delay(100);
                     md.setBrakes(400,400);
                     readAllSensors(); 
                     break;
@@ -123,7 +126,7 @@ void loop()
 
 void moveForwardGridRamp()  						//for exploration
 {  
-    forward(500,400);
+    forward(525,400);
     md.setBrakes(400,400);
     delay(100);
     readAllSensors(); 
