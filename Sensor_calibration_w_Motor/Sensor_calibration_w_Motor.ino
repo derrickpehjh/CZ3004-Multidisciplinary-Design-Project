@@ -55,37 +55,45 @@ void loop()
 
 		 		    case 'L':								//Command to move rotate left 90 degrees
 		         		  {
-		         			  //turnLeft();
+		         			  left(725,150);
 		         			  readAllSensors();
 		         			  break;
 		          		}
 
 		        case 'R':   							//Command to move rotate right 90 degrees		
 		          		{ 
-		          			//turnRight();
+		          			right(725,150);
 		          			readAllSensors(); 
 		          			break;
 		            	}
 
-		        case 'C' :								//Command to callibrate robot before starting movement
+            case 'B':                 //Command to move rotate right 90 degrees   
+                  { 
+                    backward(525,400);
+                    readAllSensors(); 
+                    break;
+                  }
+
+		        case 'C':								//Command to callibrate robot before starting movement
 				          {
+                    readAllSensors();
 				            calibrateBeforeExploration();
 				            break;
 				          }
 
-        		case 'X' :         						//Command to proceed with fastest path
+        		case 'X':         						//Command to proceed with fastest path
           				{
             				//Enable FastestPath()
             				break;
           				}
 
-          	case 'S' :         						//Command to move read sensors to get distance (Checklist)
+          	case 'S':         						//Command to move read sensors to get distance (Checklist)
           				{
             				getDistanceFromRobot();
             				break;
           				}
 
-		        default :
+		        default:
 	          			{
 	            			Serial.println("from arduino:invalid command");
 	            			break;
@@ -101,10 +109,43 @@ void loop()
 void moveForwardGridRamp(int grids)  						//for exploration
 {  
   //Move Forward 1 grid and brake
-  //Test codes for distance
-  md.setSpeeds(-200,200);
-	while(getObstacleGridsAwayFM() != 1);
-	md.setBrakes(400,400);
+  forward(525,400):
+}
+
+void forward(int value, int Speed)
+{
+    resetEncoderValues();
+    while ( encoder_R_value < value || encoder_L_value < value ) {    //run until either one wheel reaches the tick
+    tickError = 4 * tuneWithPID();
+    md.setSpeeds(-(Speed + tickError), Speed - tickError);
+    }
+}
+
+void left(int value, int Speed)
+{
+    resetEncoderValues();
+    while ( encoder_R_value < value || encoder_L_value < value ) {    //run until either one wheel reaches the tick
+    tickError = 4 * tuneWithPID();
+    md.setSpeeds(Speed + tickError, Speed - tickError);
+    }
+}
+
+void right(int value, int Speed)
+{
+    resetEncoderValues();
+    while ( encoder_R_value < value || encoder_L_value < value ) {    //run until either one wheel reaches the tick
+    tickError = 4 * tuneWithPID();
+    md.setSpeeds(-(Speed + tickError), -(Speed - tickError));
+    }
+}
+
+void backward(int value, int Speed)
+{
+    resetEncoderValues();
+    while ( encoder_R_value < value || encoder_L_value < value ) {    //run until either one wheel reaches the tick
+    tickError = 4 * tuneWithPID();
+    md.setSpeeds(Speed + tickError, -(Speed - tickError));
+    }
 }
 
 float readSensor(int IRpin, int model) 
@@ -114,7 +155,7 @@ float readSensor(int IRpin, int model)
   if (model == 1080)  //for 10-80cm sensor
     distance = 4468.9 * pow(sensorValue, -0.959); // 10-80cm  ~ formula
   if (model == 20150) //for 20-150cm sensor
-    distance = 139310 * pow(sensorValue, -1.4245); //20-150cm
+    distance = 104067 * pow(sensorValue, -1.37363); //20-150cm
   return distance;
 }
 
@@ -184,6 +225,7 @@ int getObstacleGridsAwayR()
 //FR:FM:FL:LF:LB:R
 void readAllSensors() 
 {      
+  delay(1000);
   stringToSend += getObstacleGridsAwayFR();
   stringToSend += ":";
   stringToSend += getObstacleGridsAwayFM();
@@ -200,11 +242,13 @@ void readAllSensors()
 }
 
 void calibrateBeforeExploration() {
-  //Method to check if there is a wll. If there is then align. If not then do nth;
- while( getMedianDistance(left_front_sensor_pin, 1080) != getMedianDistance(left_back_sensor_pin, 1080)) //Either compare distance between sensors and obstacle                                                                                                   
- 	{                                                                                                      //  or comapre distance between 2 sensors
- 		//Do callibration by moving motor values using trigonometry
- 	}
+
+   while(  getMedianDistance(left_front_sensor_pin, 1080)- getMedianDistance(left_back_sensor_pin, 1080) >0)
+   {
+    md.setSpeeds(70,70);
+   }   
+   md.setBrakes(400,400);                                                                                             
+
 }
 
 
@@ -214,7 +258,7 @@ void calibrateBeforeExploration() {
 //Second minus == sensor inaccuracy offset
 void getDistanceFromRobot()
 { 
-  int distance0 = getMedianDistance(front_right_sensor_pin,1080) - 6 - 2;
+  int distance0 = getMedianDistance(front_right_sensor_pin,1080) -2 - 6;
   Serial.print("Distance for front_right_sensor: ");
   Serial.println(distance0);
   
