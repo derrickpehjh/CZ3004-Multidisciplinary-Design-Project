@@ -42,41 +42,41 @@ void loop()
   while (Serial.available())  
   {
     character = Serial.read();
-    if (character == '\n' || character == '\0')   		//Meaning end of line / no new line and indicates no further input received
+    if (character == '\n' || character == '\0')       //Meaning end of line / no new line and indicates no further input received
       break;
     else 
-      command += character;     						//Else read in new commands received.
+      command += character;                 //Else read in new commands received.
   }
 
-	while (command.length() > stringIndex) 				//If there are any valid comments, perform/execute- operations on it.
-	{      		
-	    while (command[stringIndex] != '\n' && command[stringIndex] != '\0') //While not end of string
-	    {  
-	     	switch (command[stringIndex]) 				//Switch-case multiple scenarios, handle diff poss scenario inputs.
-	     	{       		
-		 		    case 'F':   							//Command to move forward 1 grid 
-		          		{ 
-		          			moveForwardGridRamp();
-		          			break;	
-		          		}
+  while (command.length() > stringIndex)        //If there are any valid comments, perform/execute- operations on it.
+  {         
+      while (command[stringIndex] != '\n' && command[stringIndex] != '\0') //While not end of string
+      {  
+        switch (command[stringIndex])         //Switch-case multiple scenarios, handle diff poss scenario inputs.
+        {           
+            case 'F':                 //Command to move forward 1 grid 
+                  { 
+                    moveForwardGridRamp();
+                    break;  
+                  }
 
-		 		    case 'L':								//Command to move rotate left 90 degrees
-		         		  {
-		         			  left(725,150);
+            case 'L':               //Command to move rotate left 90 degrees
+                  {
+                    left(725,150);
                     delay(100);
                     md.setBrakes(400,400);
-		         			  readAllSensors();
-		         			  break;
-		          		}
+                    readAllSensors();
+                    break;
+                  }
 
-		        case 'R':   							//Command to move rotate right 90 degrees		
-		          		{ 
-		          			right(725,150);
+            case 'R':                 //Command to move rotate right 90 degrees   
+                  { 
+                    right(725,150);
                     delay(100);
                     md.setBrakes(400,400);
-		          			readAllSensors(); 
-		          			break;
-		            	}
+                    readAllSensors(); 
+                    break;
+                  }
 
             case 'B':                 //Command to move rotate right 90 degrees   
                   { 
@@ -87,44 +87,44 @@ void loop()
                     break;
                   }
 
-		        case 'C':								//Command to callibrate robot before starting movement
-				          {
+            case 'C':               //Command to callibrate robot before starting movement
+                  {
                     readAllSensors();
-				            calibrateBeforeExploration();
-				            break;
-				          }
+                    calibrateBeforeExploration();
+                    break;
+                  }
 
-        		case 'X':         						//Command to proceed with fastest path
-          				{
-            				//Enable FastestPath()
-            				break;
-          				}
+            case 'X':                     //Command to proceed with fastest path
+                  {
+                    //Enable FastestPath()
+                    break;
+                  }
 
-          	case 'S':         						//Command to move read sensors to get distance (Checklist)
-          				{
-            				getDistanceFromRobot();
-            				break;
-          				}
+            case 'S':                     //Command to move read sensors to get distance (Checklist)
+                  {
+                    getDistanceFromRobot();
+                    break;
+                  }
             case 'A':                     //Command to test Arduino (Checklist)
                   {
                     Serial.println("B");
                     break;
                   }
 
-		        default:
-	          			{
-	            			Serial.println("from arduino:invalid command");
-	            			break;
-	          			}
-		    }
+            default:
+                  {
+                    Serial.println("from arduino:invalid command");
+                    break;
+                  }
+        }
        stringIndex++;
-		  } 											
-	 	stringIndex = 0;
-	  	command = "";
-	}
+      }                       
+    stringIndex = 0;
+      command = "";
+  }
 }
 
-void moveForwardGridRamp()  						//for exploration
+void moveForwardGridRamp()              //for exploration
 {  
     forward(525,400);
     md.setBrakes(400,400);
@@ -200,10 +200,10 @@ float readSensor(int IRpin, int model)
 }
 
 float getMedianDistance(int IRpin, int model) 
-{   			
-  RunningMedian samples = RunningMedian(9);       			//take 9 samples of sensor reading
+{         
+  RunningMedian samples = RunningMedian(9);             //take 9 samples of sensor reading
   for (int i = 0; i < 9; i ++)
-   samples.add(readSensor(IRpin, model));    				//samples call readSensor() to read in sensor value
+   samples.add(readSensor(IRpin, model));           //samples call readSensor() to read in sensor value
 
  int median = samples.getMedian();
 
@@ -270,76 +270,44 @@ float getMedianDistance(int IRpin, int model)
   return median;
 }
 
-int getObstacleGridsAwayFL() 
+int getObstacleGridsAway(int pin, int type) 
 {
-  int distance = getMedianDistance(front_left_sensor_pin, 1080);
-  if (distance < 18)        return 1;    					//if the distance is less than 1 grid away from the obstacle, return 1
-  else if (distance < 28)   return 2;	 					//if the distance is less than 2 grid away from the obstacle, return 2
-  else if (distance < 38)   return 3;						//if the distance is less than 3 grid away from the obstacle, return 3
-  else return 0;						 					//if the distance is more than4 grid away from the obstacle, return 0
-}
+  int distance = getMedianDistance(pin, type);
+  if(type == 1080)
+  {
+  if (distance < 15)        return 1;            
+    else if (distance < 25)   return 2;         
+    else if (distance < 35)   return 3;          
+    else return 0;                    
+  }
+  else
+  {
+    if (distance < 25)        return 2;            
+    else if (distance < 35)   return 3;         
+    else if (distance < 45)   return 4;   
+    else if (distance < 55)   return 5;
+    else if (distance < 65)   return 6;       
+    else return 0;                    
+  }
+  }
 
-int getObstacleGridsAwayFR() 
-{
-  int distance = getMedianDistance(front_right_sensor_pin, 1080);
-  if (distance < 17)        return 1;
-  else if (distance < 29)   return 2;
-  else if (distance < 38)   return 3;
-  else return 0;
-}
 
-int getObstacleGridsAwayFM() 
-{
-  int distance = getMedianDistance(front_middle_sensor_pin, 1080);
-  if (distance < 18)        return 1;
-  else if (distance < 29)   return 2;
-  else if (distance < 38)   return 3;
-  else return 0;
-}
-
-int getObstacleGridsAwayLF() 
-{  
-  int distance = getMedianDistance(left_front_sensor_pin, 1080);
-  if (distance < 18)        return 1;
-  else if (distance < 28)   return 2;
-  else if (distance < 38)   return 3;
-  else return 0;
-}
-
-int getObstacleGridsAwayLB() 
-{  
-  int distance = getMedianDistance(left_back_sensor_pin, 1080);
-  if (distance < 17)        return 1;
-  else if (distance < 27)   return 2;
-  else if (distance < 38)   return 3;
-  else return 0;
-}
-
-int getObstacleGridsAwayR() 
-{ 
-  int distance = getMedianDistance(right_front_long_range_sensor_pin, 20150);
-  if (distance < 28)        return 1; //20
-  else if (distance < 35)   return 2; //30
-  else if (distance < 46)   return 3; //40
-  else if (distance < 59)   return 4; //50
-  else return 0;
-}
 
 //FR:FM:FL:LF:LB:R
 void readAllSensors() 
 {      
   delay(1000);
-  stringToSend += getObstacleGridsAwayFR();
+  stringToSend += getObstacleGridsAway(front_right_sensor_pin, 1080);
   stringToSend += ":";
-  stringToSend += getObstacleGridsAwayFM();
+  stringToSend += getObstacleGridsAway(front_middle_sensor_pin, 1080);
   stringToSend += ":";
-  stringToSend += getObstacleGridsAwayFL();
+  stringToSend += getObstacleGridsAway(front_left_sensor_pin, 1080);
   stringToSend += ":";
-  stringToSend += getObstacleGridsAwayLF();
+  stringToSend += getObstacleGridsAway(left_front_sensor_pin, 1080);
   stringToSend += ":";
-  stringToSend += getObstacleGridsAwayLB();
+  stringToSend += getObstacleGridsAway(left_back_sensor_pin, 1080);
   stringToSend += ":";
-  stringToSend += getObstacleGridsAwayR();
+  stringToSend += getObstacleGridsAway(right_front_long_range_sensor_pin, 20150);
   Serial.println(stringToSend);
   stringToSend = "";
 }
