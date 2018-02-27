@@ -18,6 +18,9 @@ DualVNH5019MotorShield md;
 #define right_front_long_range_sensor_pin 5 //MDP BOARD PIN PS6
 #define motor_encoder_left 3      //left motor
 #define motor_encoder_right 11    //right motor
+#define small_delay_before_reading_sensor 200
+#define small_delay_between_moves 100
+#define small_delay_after_align 20
 
 
 //---------------Declare variables--------------------------
@@ -25,6 +28,7 @@ String stringToSend, command;
 char character;
 volatile int encoder_R_value = 0 , encoder_L_value = 0 ;
 int stringIndex, tickError, error, grids = 0;
+bool explorationEnabled, fastestPathEnabled = false;
 
 
 void setup()
@@ -36,6 +40,20 @@ void setup()
   Serial.begin(9600); //Enable the serial comunication
   md.init();
 }
+
+
+/*----------------------------------------------
+  Commands from ALGO/RPI to Arduino:
+  F -> Move Forward                  
+  L -> Rotate Left
+  R -> Rotate Right
+  C -> Calibrate Robot before start(exploration/fastest path)
+  X -> Starts Fastest Path                        
+  S -> Starts Exploration
+  A -> Checklists evaluation
+  
+  ----------------------------------------------*/
+
 
 void loop()
 {
@@ -56,58 +74,46 @@ void loop()
         {           
             case 'F':                 //Command to move forward 1 grid 
                   { 
-                    moveForwardGridRamp();
+                    moveForward();
                     break;  
                   }
 
             case 'L':               //Command to move rotate left 90 degrees
                   {
-                    left(725,150);
-                    delay(100);
-                    md.setBrakes(400,400);
-                    readAllSensors();
+                    rotateLeft();
                     break;
                   }
 
             case 'R':                 //Command to move rotate right 90 degrees   
                   { 
-                    right(725,150);
-                    delay(100);
-                    md.setBrakes(400,400);
-                    readAllSensors(); 
-                    break;
-                  }
-
-            case 'B':                 //Command to move rotate right 90 degrees   
-                  { 
-                    backward(525,400);
-                    delay(100);
-                    md.setBrakes(400,400);
-                    readAllSensors(); 
+                    rotateRight();
                     break;
                   }
 
             case 'C':               //Command to callibrate robot before starting movement
+                  {                 //Make sure Robot face west to align, turn right to
+                    calibrateBeforeStart();
+                    break;
+                  }
+
+            case 'X':                     //Command to start with fastest path
                   {
+                    fastestPathEnabled = true;
+                    explorationEnabled = false; 
+                    break;
+                  }
+
+            case 'S':                     //Command to start with exploration
+                  { 
+                    explorationEnabled = true;
+                    fastestPathEnabled = false;                      
                     readAllSensors();
-                    //calibrateBeforeExploration();
                     break;
                   }
-
-            case 'X':                     //Command to proceed with fastest path
+            case 'A':                     //Command for checklist(rpie/arduino)
                   {
-                    //Enable FastestPath()
-                    break;
-                  }
-
-            case 'S':                     //Command to move read sensors to get distance (Checklist)
-                  {
-                    getDistanceFromRobot();
-                    break;
-                  }
-            case 'A':                     //Command to test Arduino (Checklist)
-                  {
-                    Serial.println("B");
+                    //Serial.println("B");
+                    //getDistanceFromRobot();
                     break;
                   }
 
@@ -120,16 +126,49 @@ void loop()
        stringIndex++;
       }                       
     stringIndex = 0;
-      command = "";
+    command = "";
+  }
+   fastestPathEnabled = false;
+   explorationEnabled = false;
+}
+
+void moveForward()              
+{  
+  forward(525,400);
+  md.setBrakes(400,400);
+  if (explorationEnabled == true)
+  {
+    delay(small_delay_between_moves);
+    gotWallThenAlign();
+    delay(small_delay_between_moves);
+    readAllSensors(); 
   }
 }
 
-void moveForwardGridRamp()              //for exploration
+void rotateLeft()              
 {  
-    forward(525,400);
-    md.setBrakes(400,400);
-    delay(100);
+  left(725,150);
+  md.setBrakes(400,400);     
+  if (explorationEnabled == true)
+  {
+    delay(small_delay_between_moves);
+    gotWallThenAlign();
+    delay(small_delay_between_moves);
     readAllSensors(); 
+  }
+}
+
+void rotateRight()              //for exploration
+{  
+  right(725,150);
+  md.setBrakes(400,400);     
+  if (explorationEnabled == true)
+  {
+    delay(small_delay_between_moves);
+    gotWallThenAlign();
+    delay(small_delay_between_moves);
+    readAllSensors(); 
+  }
 }
 
 void forward(int value, int Speed)
@@ -156,15 +195,6 @@ void right(int value, int Speed)
     while ( encoder_R_value < value || encoder_L_value < value ) {    //run until either one wheel reaches the tick
     tickError = 4 * tuneWithPID();
     md.setSpeeds(-(Speed + tickError), -(Speed - tickError));
-    }
-}
-
-void backward(int value, int Speed)
-{
-    resetEncoderValues();
-    while ( encoder_R_value < value || encoder_L_value < value ) {    //run until either one wheel reaches the tick
-    tickError = 4 * tuneWithPID();
-    md.setSpeeds(Speed + tickError, -(Speed - tickError));
     }
 }
 
@@ -291,12 +321,10 @@ int getObstacleGridsAway(int pin, int type)
   }
   }
 
-
-
 //FR:FM:FL:LF:LB:R
 void readAllSensors() 
 {      
-  delay(200);
+  delay(small_delay_before_reading_sensor);
   stringToSend += getObstacleGridsAway(front_right_sensor_pin, 1080);
   stringToSend += ":";
   stringToSend += getObstacleGridsAway(front_middle_sensor_pin, 1080);
@@ -312,15 +340,74 @@ void readAllSensors()
   stringToSend = "";
 }
 
-void calibrateBeforeExploration() {
+void calibrateBeforeStart() { 
+       gotWallThenAlign(); 
+       right(725,150);
+       md.setBrakes(400,400);
+       delay(small_delay_between_moves);
+       readAllSensors();                                                                             
+       delay(small_delay_between_moves);
+}
 
-//   while(  getMedianDistance(left_front_sensor_pin, 1080)- getMedianDistance(left_back_sensor_pin, 1080) >0)
-//   {
-//    md.setSpeeds(70,70);
-//   }   
-//   md.setBrakes(400,400);                                                                                             
+boolean frontCanAlign() {
+  if ( (getObstacleGridsAway(front_left_sensor_pin, 1080) == 1) && (getObstacleGridsAway(front_right_sensor_pin, 1080) == 1) )
+    return true;
+  else
+    return false;
+}
+
+boolean sideCanAlign() {
+  if ( (getObstacleGridsAway(left_front_sensor_pin, 1080) == 1) && (getObstacleGridsAway(left_back_sensor_pin, 1080) == 1) )
+    return true;
+  else
+    return false;
+}
+
+boolean gotWallThenAlign() {      //function returns true if can align front or side, false if cannot align
+  if (sideCanAlign() || frontCanAlign()) {
+    if (sideCanAlign()) {
+      alignSideAngle();
+//      alignmentCount = 0;
+      delay(small_delay_after_align);
+    }
+    if (frontCanAlign()) {
+      alignFrontAngle();
+//      alignmentCount = 0;
+      delay(small_delay_after_align);
+    }
+    return true;
+  }
+
+  else {
+    return false;
+  }
+}
+
+
+void alignSideAngle() { //align left using motor
 
 }
+
+void alignFrontAngle() { //align front using motor
+
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
