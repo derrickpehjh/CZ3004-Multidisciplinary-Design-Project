@@ -90,7 +90,7 @@ void loop()
             case 'C':               //Command to callibrate robot before starting movement
                   {
                     readAllSensors();
-                    calibrateBeforeExploration();
+                    //calibrateBeforeExploration();
                     break;
                   }
 
@@ -222,7 +222,7 @@ float getMedianDistance(int IRpin, int model)
       median = median -5;
       if(median <= 14) return median-2;
       else if(median <= 23) return median-2;
-      else if(median <= 33) return median-2;
+      else if(median <= 33) return median;
       else if(median <= 43) return median; 
       else if(median <= 53) return median;
     }
@@ -296,7 +296,7 @@ int getObstacleGridsAway(int pin, int type)
 //FR:FM:FL:LF:LB:R
 void readAllSensors() 
 {      
-  delay(1000);
+  delay(200);
   stringToSend += getObstacleGridsAway(front_right_sensor_pin, 1080);
   stringToSend += ":";
   stringToSend += getObstacleGridsAway(front_middle_sensor_pin, 1080);
@@ -314,11 +314,11 @@ void readAllSensors()
 
 void calibrateBeforeExploration() {
 
-   while(  getMedianDistance(left_front_sensor_pin, 1080)- getMedianDistance(left_back_sensor_pin, 1080) >0)
-   {
-    md.setSpeeds(70,70);
-   }   
-   md.setBrakes(400,400);                                                                                             
+//   while(  getMedianDistance(left_front_sensor_pin, 1080)- getMedianDistance(left_back_sensor_pin, 1080) >0)
+//   {
+//    md.setSpeeds(70,70);
+//   }   
+//   md.setBrakes(400,400);                                                                                             
 
 }
 
