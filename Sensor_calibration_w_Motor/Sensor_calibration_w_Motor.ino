@@ -18,7 +18,7 @@ DualVNH5019MotorShield md;
 #define right_front_long_range_sensor_pin 5 //MDP BOARD PIN PS6
 #define motor_encoder_left 3      //left motor
 #define motor_encoder_right 11    //right motor
-#define small_delay_before_reading_sensor 200
+#define small_delay_before_reading_sensor 100
 #define small_delay_between_moves 30
 #define small_delay_after_align 20
 
@@ -73,7 +73,9 @@ void loop()
         switch (command[stringIndex])         //Switch-case multiple scenarios, handle diff poss scenario inputs.
         {           
             case 'F':                 //Command to move forward 1 grid 
-                  { 
+                  {
+//                    while (command[stringIndex] == 'F')
+//                    { stringIndex++; grids++; } 
                     moveForward();
                     break;  
                   }
@@ -90,32 +92,25 @@ void loop()
                     break;
                   }
 
-            case 'C':               //Command to callibrate robot before starting movement
-                  {                 //Make sure Robot face west to align, turn right to
-                    Serial.println("Calibrate Robot Before Start");
-                    calibrateBeforeStart();
-                    break;
-                  }
-
-            case 'X':                     //Command to start with fastest path
-                  {
-                    Serial.println("Enabled Fastest Path");
-                    fastestPathEnabled = true;
-                    explorationEnabled = false; 
-                    //string of movements
-                    break;
-                  }
-
-            case 'Z':                     //Command to start with exploration
-                  { 
-                    Serial.println("Enabled Exploration");
-                    explorationEnabled = true;
-                    fastestPathEnabled = false;                      
-                    readAllSensors();
+            case 'C':               //Command to callibrate robot before/after
+                  {                
+                    calibrate();
                     break;
                   }
             case 'A':                     //Read Sensors
                   {
+//                    int a = getMedianDistance(0,1080);
+//                     int b = getMedianDistance(1,1080);
+//                      int c = getMedianDistance(2,1080);
+//                       int d = getMedianDistance(3,1080);
+//                        int e = getMedianDistance(4,1080);
+//                         int f = getMedianDistance(5,20150);
+//                         Serial.println(a);
+//                         Serial.println(b);
+//                         Serial.println(c);
+//                         Serial.println(d);
+//                         Serial.println(e);
+//                         Serial.println(f);
                     readAllSensors();
                     break;
                   }
@@ -127,6 +122,7 @@ void loop()
                   }
         }
        stringIndex++;
+       grids=0;
       }                       
     stringIndex = 0;
     command = "";
@@ -136,14 +132,14 @@ void loop()
 void moveForward()              
 {  
   forward(25, 100);
-  forward(420,400);
+  forward(450, 400);
   md.setBrakes(400,400);
-  forwardCorrection(545);
-  if (explorationEnabled == true)
-  {
-    gotWallThenAlign();
-    readAllSensors(); 
-  }
+  forwardCorrection(575);
+  gotWallThenAlign();
+//  Serial.print("left");
+//  Serial.println(encoder_L_value);
+//  Serial.print("right");
+//  Serial.println(encoder_R_value);
 }
 
 void forwardCorrection(int practicalValue) {
@@ -173,26 +169,18 @@ void forwardCorrection(int practicalValue) {
 
 void rotateLeft()              
 {  
-  left(648, 400);   //695 at lower voltage
+  left(647, 400);   //695 at lower voltage
   md.setBrakes(400, 400);
-  turnLeftCorrection(810);    
-  if (explorationEnabled == true)
-  {
-    gotWallThenAlign();
-    readAllSensors(); 
-  }
+  turnLeftCorrection(785);    
+  gotWallThenAlign();
 }
 
 void rotateRight()              //for exploration
 {  
   right(644, 400);   //695 at lower voltage
   md.setBrakes(400, 400);
-  turnRightCorrection(779);    
-  if (explorationEnabled == true)
-  {
-    gotWallThenAlign();
-    readAllSensors(); 
-  }
+  turnRightCorrection(776);    
+  gotWallThenAlign();
 }
 
 void forward(int value, int Speed)
@@ -315,8 +303,6 @@ float getMedianDistance(int IRpin, int model)
       if(median <= 14) return median-1;
       else if(median <= 23) return median;      
       else if(median <= 33) return median+3;  
-      else if(median <= 43) return median+4;
-      else if(median <= 53) return median+4;
     }
   
   if(IRpin == front_middle_sensor_pin)
@@ -324,9 +310,7 @@ float getMedianDistance(int IRpin, int model)
       median = median -5;
       if(median <= 14) return median-2;
       else if(median <= 23) return median-1;
-      else if(median <= 33) return median;
-      else if(median <= 43) return median+2; 
-      else if(median <= 53) return median;
+      else if(median <= 33) return median ;
     }
   
   if(IRpin == front_left_sensor_pin)
@@ -334,19 +318,15 @@ float getMedianDistance(int IRpin, int model)
       median = median -5;
       if(median <= 14) return median-1;
       else if(median <= 23) return median; 
-      else if(median <= 33) return median;
-      else if(median <= 43) return median+2; 
-      else if(median <= 53) return median+4;      
+      else if(median <= 33) return median+3;    
     }
 
   if(IRpin == left_front_sensor_pin)
     {
       median = median -5;
-      if(median <= 14) return median-1;
+      if(median <= 14) return median-2;
       else if(median <= 23) return median-1;
-      else if(median <= 33) return median+1;
-      else if(median <= 43) return median;
-      else if(median <= 53) return median-2;      
+      else if(median <= 33) return median+1;     
     }
 
    if(IRpin == left_back_sensor_pin)
@@ -354,9 +334,7 @@ float getMedianDistance(int IRpin, int model)
       median = median -5;
       if(median <= 14) return median-1;
       else if(median <= 23) return median; 
-      else if(median <= 33) return median+2;
-      else if(median <= 43) return median-1; 
-      else if(median <= 53) return median-2;      
+      else if(median <= 33) return median+2;     
     }
   
   if(IRpin == right_front_long_range_sensor_pin)
@@ -379,7 +357,7 @@ int getObstacleGridsAway(int pin, int type)
   {
   if (distance < 15)        return 1;            
     else if (distance < 25)   return 2;         
-    else if (distance < 35)   return 3;          
+    else if (distance < 33)   return 3;          
     else return 0;                    
   }
   else
@@ -412,18 +390,10 @@ void readAllSensors()
   stringToSend = "";
 }
 
-void calibrateBeforeStart() { 
+void calibrate() { 
 
-  for(int i=1; i<=3; i++)
-  {
        gotWallThenAlign(); 
-       md.setBrakes(400,400);
-       delay(1000);
-       if(i!=3)
-       {
-        rotateRight();
-       }
-  }                                                                                   
+       md.setBrakes(400,400);                                                         
 }
 
 boolean frontCanAlign() {
@@ -452,17 +422,50 @@ void gotWallThenAlign() {      //function returns true if can align front or sid
 }
 
 void alignSideAngle() { //align left using motor
-  float error = (getMedianDistance(left_front_sensor_pin,1080)- getMedianDistance(left_back_sensor_pin,1080))/2;
-  if (error <0)
-  {
-    right(-(error*10),400);
-    md.setBrakes(400,400); 
+    int Speed = 80; //speed that you want it to move left / right while adjusting
+    int sensorError;
+    int sensorErrorAllowance = 1;
+  resetEncoderValues();
+  while ( ( sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) <= -sensorErrorAllowance ) { //robot tilted left, turn right until acceptable error angle
+    tickError = 3 * tuneWithPID();
+    md.setSpeeds(-(Speed + tickError), -(Speed - tickError));   //turn right
   }
-  else
-  {
-    left((error*10),400);
-    md.setBrakes(400,400); 
+  md.setBrakes(400,400);
+  resetEncoderValues();
+  while ( ( sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) >= sensorErrorAllowance ) { //robot tilted right, turn left until acceptable error angle
+    tickError = 3 * tuneWithPID();
+    md.setSpeeds( Speed + tickError, (Speed - tickError));    //turn left
   }
+  md.setBrakes(400, 400);
+
+//    while (getMedianDistance(left_back_sensor_pin,1080) <10)
+//    { 
+//    right(25,400);
+//    md.setBrakes(400,400);
+//    Serial.println("a");
+//    }
+//
+//    while (getMedianDistance(left_back_sensor_pin,1080) >10)
+//    { 
+//    left(25,400);
+//    md.setBrakes(400,400);
+//    Serial.println("a");
+//    }
+// 
+//
+//    while(getMedianDistance(left_front_sensor_pin,1080) >10)
+//    {
+//      left(25,400);
+//      md.setBrakes(400,400);
+//      Serial.println("q");
+//    }
+//
+//    while(getMedianDistance(left_front_sensor_pin,1080) <10)
+//    {
+//      right(25,400);
+//      md.setBrakes(400,400);
+//      Serial.println("q");
+//    }
 }
 
 //Need to adjust to find exact encoder and distance
@@ -471,7 +474,6 @@ void alignFrontAngle() { //align front using motor
   while (getMedianDistance(front_middle_sensor_pin,1080) > 10)
   {
     forward(25, 100);
-    forward(320,200);; //move a little at a time
   }
    md.setBrakes(400,400); 
 }
