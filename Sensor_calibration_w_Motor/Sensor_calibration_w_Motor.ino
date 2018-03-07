@@ -27,7 +27,7 @@ DualVNH5019MotorShield md;
 String stringToSend, command;
 char character;
 volatile int encoder_R_value = 0 , encoder_L_value = 0 ;
-int stringIndex, tickError, error, grids = 0;
+int stringIndex, tickError, error, grids, prevAction = 0;
 bool explorationEnabled, fastestPathEnabled = false;
 
 
@@ -136,10 +136,7 @@ void moveForward()
   md.setBrakes(400,400);
   forwardCorrection(575);
   gotWallThenAlign();
-//  Serial.print("left");
-//  Serial.println(encoder_L_value);
-//  Serial.print("right");
-//  Serial.println(encoder_R_value);
+  
 }
 
 void forwardCorrection(int practicalValue) {
@@ -291,7 +288,7 @@ float readSensor(int IRpin, int model)
 
 float getMedianDistance(int IRpin, int model) 
 {         
-  RunningMedian samples = RunningMedian(9);             //take 9 samples of sensor reading
+  RunningMedian samples = RunningMedian(20);             //take 20 samples of sensor reading
   for (int i = 0; i < 20; i ++)
    samples.add(readSensor(IRpin, model));           //samples call readSensor() to read in sensor value
 
@@ -419,6 +416,24 @@ void gotWallThenAlign() {      //function returns true if can align front or sid
       alignFrontAngle();
     }
   }
+  else
+  {
+    Serial.print(prevAction);
+    if(prevAction ==1)
+    {
+      delay(1000);
+      left(10,100);
+      md.setBrakes(400,400);
+    }
+    else if(prevAction ==2)
+    {
+      delay(1000);
+      right(10,100);
+      md.setBrakes(400,400);
+    }
+    prevAction = 0;
+  }
+  
 }
 
 void alignSideAngle() { //align left using motor
@@ -437,37 +452,30 @@ void alignSideAngle() { //align left using motor
     md.setSpeeds( Speed + tickError, (Speed - tickError));    //turn left
   }
   md.setBrakes(400, 400);
+         Serial.println(getMedianDistance(3,1080));
+       Serial.println(getMedianDistance(4,1080));
+  if(getMedianDistance(left_front_sensor_pin, 1080)<5 && getMedianDistance(left_back_sensor_pin, 1080)<5)
+  {
+       delay(1000);
+       right(10,100); 
+       Serial.println("T1");
+       Serial.println(getMedianDistance(3,1080));
+       Serial.println(getMedianDistance(4,1080));
+       md.setBrakes(400,400);
+       prevAction = 1;
+  }
+  if(getMedianDistance(left_front_sensor_pin, 1080)>5 && getMedianDistance(left_back_sensor_pin, 1080)>5)
+  {
+       delay(1000);
+       left(10,100); 
+       Serial.println("T2");
+       Serial.println(getMedianDistance(3,1080));
+       Serial.println(getMedianDistance(4,1080));
+       md.setBrakes(400,400);
+       prevAction = 2;
+  }
 
-//    while (getMedianDistance(left_back_sensor_pin,1080) <10)
-//    { 
-//    right(25,400);
-//    md.setBrakes(400,400);
-//    Serial.println("a");
-//    }
-//
-//    while (getMedianDistance(left_back_sensor_pin,1080) >10)
-//    { 
-//    left(25,400);
-//    md.setBrakes(400,400);
-//    Serial.println("a");
-//    }
-// 
-//
-//    while(getMedianDistance(left_front_sensor_pin,1080) >10)
-//    {
-//      left(25,400);
-//      md.setBrakes(400,400);
-//      Serial.println("q");
-//    }
-//
-//    while(getMedianDistance(left_front_sensor_pin,1080) <10)
-//    {
-//      right(25,400);
-//      md.setBrakes(400,400);
-//      Serial.println("q");
-//    }
 }
-
 //Need to adjust to find exact encoder and distance
 void alignFrontAngle() { //align front using motor
 
