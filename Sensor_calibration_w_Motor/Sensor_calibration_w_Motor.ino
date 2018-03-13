@@ -19,8 +19,6 @@ DualVNH5019MotorShield md;
 #define motor_encoder_left 3      //left motor
 #define motor_encoder_right 11    //right motor
 #define small_delay_before_reading_sensor 20
-#define small_delay_between_moves 30
-#define small_delay_after_align 20
 
 
 //---------------Declare variables--------------------------
@@ -75,26 +73,32 @@ void loop()
             case 'F':                 //Command to move forward 1 grid 
                   {
                     gotWallThenAlign();
+                    delay(20);                    
                     moveForward();
+                    delay(20);
                     gotWallThenAlign();
                     break;  
                   }
 
             case 'L':               //Command to move rotate left 90 degrees
                   {
-                     rotateCheck = true;
-                    gotWallThenAlign();
+                    rotateCheck = true;
+                    gotWallThenAlign();   //actl nd this before rotate left anot ah?  cos logically in order for conditions to allow robot to turn left, the robot must first not detect any immediate obstacle on its left, meaning LF!=1  &  LB!=1  So technically nthing to align to.   Does not require to sense any obstacle in front in order to turn left.  Have / dun have also will activate as long as Left!=1, so does not sense/detect any immediate obstacle on its Left.
+                    delay(20);
                     rotateLeft();
+                    delay(20);
                     gotWallThenAlign();
-                     rotateCheck = false;
+                    rotateCheck = false;
                     break;
                   }
 
-            case 'R':                 //Command to move rotate right 90 degrees   
+            case 'R':                 //Command to move rotate right 90 degrees     //turns right when Front = 1 + Left=1 (LF=1 & LB =1), so cannot turn left as is default action, can only turn right. In this case, then yes, go tLeft wall that can check, so check alignment to front & left first before turning. Then aft turning depending on how much/deg of adjustment, align to wall again if not correct/accurate.
                   { 
                      rotateCheck = true;
                     gotWallThenAlign();
+                    delay(20);
                     rotateRight();
+                    delay(20);
                     gotWallThenAlign();
                      rotateCheck = false;
                     break;
@@ -107,12 +111,12 @@ void loop()
                   }
             case 'A':                     //Read Sensors
                   {
-                    Serial.println(getMedianDistance(0,1080));
-                    Serial.println(getMedianDistance(1,1080));
-                    Serial.println(getMedianDistance(2,1080));
+//                    Serial.println(getMedianDistance(0,1080));
+//                    Serial.println(getMedianDistance(1,1080));
+//                    Serial.println(getMedianDistance(2,1080));
                     Serial.println(getMedianDistance(3,1080));
                     Serial.println(getMedianDistance(4,1080));
-                    Serial.println(getMedianDistance(5,20150));
+//                    Serial.println(getMedianDistance(5,20150));
                     readAllSensors();
                     break;
                   }
@@ -134,9 +138,9 @@ void loop()
 void moveForward()              
 {  
   forward(25, 100);
-  forward(420, 380);
+  forward(405, 380);
   md.setBrakes(400,400);
-  forwardCorrection(540);
+  forwardCorrection(525);
 }
 
 void forward(int value, int Speed)
@@ -183,19 +187,19 @@ void forwardCorrection(int practicalValue) {
 
 void rotateLeft()              
 { 
-  left(660, 380);   //695 at lower voltage
+  left(643, 380);   //643 380 ORIGINAL
   md.setBrakes(400, 400);
-  turnLeftCorrection(770);
-    forward(20,80);
-    md.setBrakes(400, 400);
+  turnLeftCorrection(770); //763 ORIGINAL
+//  forward(20,80);
+  md.setBrakes(400, 400);
 }
 
 void rotateRight()              //for exploration
 { 
-  right(660,380);
+  right(647,380);  //647 380 ORIGINAL
   md.setBrakes(400, 400);
-  turnRightCorrection(770);  
-  forward(20,80);
+  turnRightCorrection(760);  //757 ORIGINAL
+//  forward(20,80);
   md.setBrakes(400, 400);
   
 }
@@ -332,16 +336,16 @@ float getMedianDistance(int IRpin, int model)
   if(IRpin == left_front_sensor_pin)
     {
       median = median -5;
-      if(median <= 14) return median-1;
-      else if(median <= 23) return median-1;
-      else if(median <= 33) return median+1;     
+      if(median <= 14) return median-2;
+      else if(median <= 23) return median+1;
+      else if(median <= 33) return median;     
     }
 
    if(IRpin == left_back_sensor_pin)
     {
       median = median -5;
-      if(median <= 14) return median-1;
-      else if(median <= 23) return median; 
+      if(median <= 14) return median-2;
+      else if(median <= 23) return median-1; 
       else if(median <= 33) return median+2;     
     }
   
@@ -381,7 +385,6 @@ int getObstacleGridsAway(int pin, int type)
 //FR:FM:FL:LF:LB:R
 void readAllSensors() 
 {      
-  delay(small_delay_before_reading_sensor);
   stringToSend += getObstacleGridsAway(front_right_sensor_pin, 1080);
   stringToSend += ":";
   stringToSend += getObstacleGridsAway(front_middle_sensor_pin, 1080);
@@ -433,54 +436,61 @@ void gotWallThenAlign() {      //function returns true if can align front or sid
 
 void alignSideAngle() { //align left using motor
   
-    int Speed = 180; //speed that you want it to move left / right while adjusting
+    int Speed = 80; //speed that you want it to move left / right while adjusting
     int sensorError;
-    int sensorErrorAllowance = 2;
+    int sensorErrorAllowance = 0;
   resetEncoderValues();
-  
-  while ( ( (sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) <= -sensorErrorAllowance)) { //robot tilted left, turn right until acceptable error angle
+  while ( ( (sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) < sensorErrorAllowance)) { //robot tilted left, turn right until acceptable error angle
     tickError = 2 * tuneWithPID();
     md.setSpeeds(-(Speed + tickError), -(Speed - tickError));   //turn right
   }
-  
   md.setBrakes(400,400);
   resetEncoderValues();
-  while ( ( sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) >= sensorErrorAllowance ) { //robot tilted right, turn left until acceptable error angle
+  while ( ( sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) > sensorErrorAllowance ) { //robot tilted right, turn left until acceptable error angle
     tickError = 2 * tuneWithPID();
     md.setSpeeds( Speed + tickError, (Speed - tickError));    //turn left
   }
   md.setBrakes(400, 400);
   if ( rotateCheck == false){
-  if(getMedianDistance(left_front_sensor_pin, 1080)<6 && getMedianDistance(left_back_sensor_pin, 1080)<6)
+  if(getMedianDistance(left_front_sensor_pin, 1080)<5 && getMedianDistance(left_back_sensor_pin, 1080)<5)
   {      
     rotateLeft();
+    delay(20);
     alignFrontAngle();
+    delay(20);
     rotateRight();
+    delay(20);
+    backward(10,80);
   }
-  else if((getMedianDistance(left_front_sensor_pin, 1080)>7 && getMedianDistance(left_back_sensor_pin, 1080)>7)&& getMedianDistance(left_front_sensor_pin, 1080)< 12 && getMedianDistance(left_back_sensor_pin, 1080)<12)
+  else if((getMedianDistance(left_front_sensor_pin, 1080)>6 && getMedianDistance(left_back_sensor_pin, 1080)>6)&& getMedianDistance(left_front_sensor_pin, 1080)< 11 && getMedianDistance(left_back_sensor_pin, 1080)<11)
   {
     rotateLeft();
+    delay(20);
     alignFrontAngle();
+    delay(20);
     rotateRight();
+    //delay(20);
+    backward(10,80);
   }
   }
+  md.setBrakes(400,400);
 }
 
 
 void alignFrontAngle() { 
   int Speed = 80;
   int sensorError;
-  int sensorErrorAllowance = 2;
+  int sensorErrorAllowance = 1;
   resetEncoderValues();
   while (sensorError = getMedianDistance(front_left_sensor_pin,1080) - getMedianDistance(front_right_sensor_pin,1080) >= sensorErrorAllowance)
   {
-     tickError = 3 * tuneWithPID();
+     tickError = 2 * tuneWithPID();
       md.setSpeeds(-(Speed + tickError), -(Speed - tickError)); 
   }
   md.setBrakes(400,400);
   resetEncoderValues();
   while ( sensorError = getMedianDistance(front_left_sensor_pin,1080) - getMedianDistance(front_right_sensor_pin,1080 ) <= -sensorErrorAllowance ) { //robot tilted right, turn left until acceptable error angle
-    tickError = 3 * tuneWithPID();
+    tickError = 2 * tuneWithPID();
     md.setSpeeds( Speed + tickError, (Speed - tickError));    //turn left
   }
   md.setBrakes(400, 400);
@@ -489,13 +499,14 @@ void alignFrontAngle() {
     backward(1, 80);
   }
   md.setBrakes(400,400);
+  
   while (getMedianDistance(front_middle_sensor_pin,1080) > 5 && getMedianDistance(front_middle_sensor_pin,1080) < 10)
   {
     forward(1, 80);
   }
   md.setBrakes(400,400); 
-   
 
+  
 }
 
 
