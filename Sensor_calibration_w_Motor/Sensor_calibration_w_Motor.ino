@@ -18,10 +18,10 @@ DualVNH5019MotorShield md;
 #define right_front_long_range_sensor_pin 5 //MDP BOARD PIN PS6
 #define motor_encoder_left 3      //left motor
 #define motor_encoder_right 11    //right motor
-#define small_delay_between_moves 100
-#define small_delay_before_reading_sensor 100
-#define small_delay_after_reading_sensor 100
-#define small_delay_after_align 100
+#define small_delay_between_moves 30
+#define small_delay_before_reading_sensor 50
+#define small_delay_after_reading_sensor 20
+#define small_delay_after_align 50
 
 
 //---------------Declare variables--------------------------
@@ -52,7 +52,6 @@ void setup()
   X -> Starts Fastest Path
   Z -> Starts Exploration
   A -> Checklists evaluation
-
   ----------------------------------------------*/
 
 
@@ -75,19 +74,18 @@ void loop()
       {
         case 'F':                 //Command to move forward 1 grid
           {
-            gotWallThenAlign();
-            delay(small_delay_after_align);
+            delay(small_delay_between_moves);
+//            gotWallThenAlign();
             moveForward();
-            delay(small_delay_before_reading_sensor);
             gotWallThenAlign();
             break;
           }
 
         case 'L':               //Command to move rotate left 90 degrees
           {
+            delay(small_delay_between_moves);
             rotateCheck = true;
             gotWallThenAlign();
-            delay(small_delay_after_align);
             rotateLeft();
             rotateCheck = false;
             break;
@@ -95,11 +93,10 @@ void loop()
 
         case 'R':                 //Command to move rotate right 90 degrees     //turns right when Front = 1 + Left=1 (LF=1 & LB =1), so cannot turn left as is default action, can only turn right. In this case, then yes, go tLeft wall that can check, so check alignment to front & left first before turning. Then aft turning depending on how much/deg of adjustment, align to wall again if not correct/accurate.
           {
+            delay(small_delay_between_moves);
             rotateCheck = true;
             gotWallThenAlign();
-            delay(small_delay_after_align);
             rotateRight();
-            delay(small_delay_before_reading_sensor);
             gotWallThenAlign();
             rotateCheck = false;
             break;
@@ -112,12 +109,12 @@ void loop()
           }
         case 'A':                     //Read Sensors
           {
-            //                    Serial.println(getMedianDistance(0,1080));
-            //                    Serial.println(getMedianDistance(1,1080));
-            //                    Serial.println(getMedianDistance(2,1080));
-            //                    Serial.println(getMedianDistance(3,1080));
-            //                    Serial.println(getMedianDistance(4,1080));
-            //                    Serial.println(getMedianDistance(5,20150));
+            Serial.println(getMedianDistance(0, 1080));
+            Serial.println(getMedianDistance(1, 1080));
+            Serial.println(getMedianDistance(2, 1080));
+            Serial.println(getMedianDistance(3, 1080));
+            Serial.println(getMedianDistance(4, 1080));
+            Serial.println(getMedianDistance(5, 20150));
             readAllSensors();
             break;
           }
@@ -138,17 +135,28 @@ void loop()
 void moveForward()
 {
   forward(25, 100);
-  forward(405, 377);
+  forward(405, 380);
   md.setBrakes(400, 400);
-  forwardCorrection(525);
+  forwardCorrection(510); //510 original
+  Serial.print(encoder_L_value);
+  Serial.print(" : ");
+  Serial.println(encoder_R_value);
 }
 
 void forward(int value, int Speed)
 {
   resetEncoderValues();
-  while ( encoder_R_value < value || encoder_L_value < value ) {
-    tickError = 4 * tuneWithPID();
-    md.setSpeeds(-(Speed + tickError), Speed - tickError); //lower the right motor speed
+  if (Speed <= 100) {
+    while ( encoder_R_value < value || encoder_L_value < value ) {
+      tickError = 1 * tuneWithPID2();
+      md.setSpeeds(-(Speed - tickError), Speed + tickError); //lower the right motor speed
+    }
+  }
+  else {
+    while ( encoder_L_value < value || encoder_R_value < value ) {
+      tickError = 3 * tuneWithPID();
+      md.setSpeeds(-(370 + tickError ), 379 - tickError ); //lower the right motor speed 397
+    }
   }
 }
 
@@ -163,45 +171,39 @@ void backward(int value, int Speed) {
 void forwardCorrection(int practicalValue) {
   int Speed = 80;
   while ( encoder_R_value < practicalValue && encoder_L_value < practicalValue ) {
-    tickError = 4 * tuneWithPID();
-    md.setSpeeds(-(Speed + tickError), Speed - tickError);
-    delay(10);
+    tickError = 1 * tuneWithPID2();
+    md.setSpeeds(-(Speed - tickError), Speed + tickError);
     md.setBrakes(400, 400);
-    delay(5);
   }
   md.setBrakes(400, 400);
   while (encoder_L_value < practicalValue ) {
     md.setSpeeds(-Speed, 0);
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
   md.setBrakes(400, 400);
   while (encoder_R_value < practicalValue) {
     md.setSpeeds(0, Speed);
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
 }
 
 void rotateLeft()
 {
-  left(640, 380);   //643 380 ORIGINAL
+  left(620, 380);   //620 380 ORIGINAL
   md.setBrakes(400, 400);
-  turnLeftCorrection(762); //763 ORIGINAL
+  turnLeftCorrection(741); //741 ORIGINAL
   delay(small_delay_between_moves);
-  forward(20, 80);
+  forward(10, 80);
   md.setBrakes(400, 400);
 }
 
 void rotateRight()              //for exploration
 {
-  right(647, 382); //647 380 ORIGINAL
+  right(647, 380); //647 380 ORIGINAL
   md.setBrakes(400, 400);
-  turnRightCorrection(762);  //755 ORIGINAL
+  turnRightCorrection(736);  //736 ORIGINAL
   delay(small_delay_between_moves);
-  forward(20, 80);
+  forward(10, 80);
   md.setBrakes(400, 400);
 
 }
@@ -220,23 +222,17 @@ void turnLeftCorrection(int practicalValue) {
   while ( encoder_R_value < practicalValue && encoder_L_value < practicalValue ) {
     tickError = 3 * tuneWithPID();
     md.setSpeeds(Speed + tickError, (Speed - tickError) );
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
 
   while (encoder_L_value < practicalValue ) {
     md.setSpeeds(Speed, 0);
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
 
   while (encoder_R_value < practicalValue) {
     md.setSpeeds(0, Speed);
-    delay(10); //20
     md.setBrakes(400, 400);
-    delay(5);
   }
 }
 
@@ -254,28 +250,27 @@ void turnRightCorrection(int practicalValue) {
   while ( encoder_R_value < practicalValue && encoder_L_value < practicalValue ) {
     tickError = 3 * tuneWithPID();
     md.setSpeeds(-(Speed + tickError), -(Speed - tickError) );
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
 
   while (encoder_L_value < practicalValue ) {
     md.setSpeeds(-Speed, 0);
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
 
   while (encoder_R_value < practicalValue) {
     md.setSpeeds(0, -Speed);
-    delay(10);
     md.setBrakes(400, 400);
-    delay(5);
   }
 }
 
 double tuneWithPID() {
   error = encoder_R_value - encoder_L_value;
+  return error;
+}
+
+double tuneWithPID2() {
+  error = encoder_L_value - encoder_R_value;
   return error;
 }
 
@@ -322,7 +317,7 @@ float getMedianDistance(int IRpin, int model)
   if (IRpin == front_middle_sensor_pin)
   {
     median = median - 5;
-    if (median <= 14) return median - 2;
+    if (median <= 14) return median - 1;
     else if (median <= 23) return median - 1;
     else if (median <= 33) return median ;
   }
@@ -338,7 +333,7 @@ float getMedianDistance(int IRpin, int model)
   if (IRpin == left_front_sensor_pin)
   {
     median = median - 5;
-    if (median <= 14) return median - 1;
+    if (median <= 14) return median - 2;
     else if (median <= 23) return median + 1;
     else if (median <= 33) return median;
   }
@@ -388,6 +383,7 @@ int getObstacleGridsAway(int pin, int type)
 //FR:FM:FL:LF:LB:R
 void readAllSensors()
 {
+  delay(small_delay_before_reading_sensor);
   stringToSend += getObstacleGridsAway(front_right_sensor_pin, 1080);
   stringToSend += ":";
   stringToSend += getObstacleGridsAway(front_middle_sensor_pin, 1080);
@@ -434,6 +430,7 @@ void gotWallThenAlign() {      //function returns true if can align front or sid
     if (frontCanAlign()) {
       alignFrontAngle();
     }
+    delay(small_delay_after_align);
   }
 
 
@@ -443,7 +440,7 @@ void alignSideAngle() { //align left using motor
 
   int Speed = 80; //speed that you want it to move left / right while adjusting
   int sensorError;
-  int sensorErrorAllowance = 0;
+  int sensorErrorAllowance = 1;
   resetEncoderValues();
   while ( ( (sensorError = getMedianDistance(left_front_sensor_pin, 1080) - getMedianDistance(left_back_sensor_pin, 1080) ) <= -sensorErrorAllowance)) { //robot tilted left, turn right until acceptable error angle
     tickError = 2 * tuneWithPID();
@@ -460,7 +457,7 @@ void alignSideAngle() { //align left using motor
   delay(small_delay_between_moves);
   if ( rotateCheck == false) {
     if ((getMedianDistance(left_front_sensor_pin, 1080) < 5 && getMedianDistance(left_back_sensor_pin, 1080) < 5) ||
-        ((getMedianDistance(left_front_sensor_pin, 1080) > 5 && getMedianDistance(left_back_sensor_pin, 1080) > 5) && getMedianDistance(left_front_sensor_pin, 1080) < 10 && getMedianDistance(left_back_sensor_pin, 1080) < 10))
+        ((getMedianDistance(left_front_sensor_pin, 1080) > 6 && getMedianDistance(left_back_sensor_pin, 1080) > 6) && getMedianDistance(left_front_sensor_pin, 1080) < 10 && getMedianDistance(left_back_sensor_pin, 1080) < 10))
     {
       rotateLeft();
       delay(small_delay_before_reading_sensor);
@@ -495,13 +492,13 @@ void alignFrontAngle() {
   }
   md.setBrakes(400, 400);
   delay(small_delay_between_moves);
-  while (getMedianDistance(front_middle_sensor_pin, 1080) < 5)
+  while (getMedianDistance(front_middle_sensor_pin, 1080) < 6)
   {
     backward(1, 80);
   }
   md.setBrakes(400, 400);
   delay(small_delay_between_moves);
-  while (getMedianDistance(front_middle_sensor_pin, 1080) > 5 && getMedianDistance(front_middle_sensor_pin, 1080) < 10)
+  while (getMedianDistance(front_middle_sensor_pin, 1080) > 6 && getMedianDistance(front_middle_sensor_pin, 1080) < 10)
 
   {
     forward(1, 80);
@@ -510,5 +507,3 @@ void alignFrontAngle() {
 
 
 }
-
-
