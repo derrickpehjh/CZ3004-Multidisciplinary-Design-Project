@@ -19,9 +19,9 @@ DualVNH5019MotorShield md;
 #define motor_encoder_left 3      //left motor
 #define motor_encoder_right 11    //right motor
 #define small_delay_between_moves 30
-#define small_delay_before_reading_sensor 50
+#define small_delay_before_reading_sensor 30
 #define small_delay_after_reading_sensor 20
-#define small_delay_after_align 50
+#define small_delay_after_align 30
 
 
 //---------------Declare variables--------------------------
@@ -62,8 +62,10 @@ void loop()
     character = Serial.read();
     if (character == '\n' || character == '\0')       //Meaning end of line / no new line and indicates no further input received
       break;
-    else
-      command += character;                 //Else read in new commands received.
+    else {
+      command += character;
+      delay(4);//Else read in new commands received.
+    }
   }
 
   while (command.length() > stringIndex)        //If there are any valid comments, perform/execute- operations on it.
@@ -72,31 +74,47 @@ void loop()
     {
       switch (command[stringIndex])         //Switch-case multiple scenarios, handle diff poss scenario inputs.
       {
+
         case 'F':                 //Command to move forward 1 grid
           {
-            delay(small_delay_between_moves);
-//            gotWallThenAlign();
-            moveForward();
+//            delay(small_delay_between_moves);
+            //            gotWallThenAlign();
+            while (command[stringIndex] == 'F')
+            {
+              stringIndex++;
+              grids++;
+
+            }
+            stringIndex--;
+            moveForward(grids);
+
+            //            delay(small_delay_before_reading_sensor);
             gotWallThenAlign();
+            grids = 0;
             break;
           }
 
         case 'L':               //Command to move rotate left 90 degrees
           {
-            delay(small_delay_between_moves);
+            //delay(small_delay_between_moves);
             rotateCheck = true;
             gotWallThenAlign();
+            delay(small_delay_before_reading_sensor);
             rotateLeft();
+            delay(small_delay_between_moves);
             rotateCheck = false;
             break;
           }
 
-        case 'R':                 //Command to move rotate right 90 degrees     //turns right when Front = 1 + Left=1 (LF=1 & LB =1), so cannot turn left as is default action, can only turn right. In this case, then yes, go tLeft wall that can check, so check alignment to front & left first before turning. Then aft turning depending on how much/deg of adjustment, align to wall again if not correct/accurate.
+        case 'R':                 //Command to move rotate right 90 degrees     //turns right when Front = 1 + Left=1 (LF=1 & LB =1), so cannot turn left as is default action, can only turn right. In this case, then yes, go Left wall that can check, so check alignment to front & left first before turning. Then aft turning depending on how much/deg of adjustment, align to wall again if not correct/accurate.
           {
-            delay(small_delay_between_moves);
+
+            //delay(small_delay_between_moves);
             rotateCheck = true;
             gotWallThenAlign();
+            delay(small_delay_before_reading_sensor);
             rotateRight();
+            //            delay(small_delay_before_reading_sensor);
             gotWallThenAlign();
             rotateCheck = false;
             break;
@@ -109,12 +127,12 @@ void loop()
           }
         case 'A':                     //Read Sensors
           {
-            Serial.println(getMedianDistance(0, 1080));
-            Serial.println(getMedianDistance(1, 1080));
-            Serial.println(getMedianDistance(2, 1080));
-            Serial.println(getMedianDistance(3, 1080));
-            Serial.println(getMedianDistance(4, 1080));
-            Serial.println(getMedianDistance(5, 20150));
+            //            Serial.println(getMedianDistance(0, 1080));
+            //            Serial.println(getMedianDistance(1, 1080));
+            //            Serial.println(getMedianDistance(2, 1080));
+            //            Serial.println(getMedianDistance(3, 1080));
+            //            Serial.println(getMedianDistance(4, 1080));
+            //            Serial.println(getMedianDistance(5, 20150));
             readAllSensors();
             break;
           }
@@ -125,22 +143,23 @@ void loop()
           }
       }
       stringIndex++;
-      grids = 0;
     }
-    stringIndex = 0;
-    command = "";
+    stringIndex++;
+    grids = 0;
   }
+  stringIndex = 0;
+  command = "";
 }
 
-void moveForward()
+void moveForward(int gridss)
 {
   forward(25, 100);
-  forward(405, 380);
+  forward(425 + 600 * (gridss - 1), 380);
   md.setBrakes(400, 400);
-  forwardCorrection(510); //510 original
-  Serial.print(encoder_L_value);
-  Serial.print(" : ");
-  Serial.println(encoder_R_value);
+  forwardCorrection(535 + 600 * (gridss - 1)); //510 original
+  //  Serial.print(encoder_L_value);
+  //  Serial.print(" : ");
+  //  Serial.println(encoder_R_value);
 }
 
 void forward(int value, int Speed)
@@ -155,7 +174,7 @@ void forward(int value, int Speed)
   else {
     while ( encoder_L_value < value || encoder_R_value < value ) {
       tickError = 3 * tuneWithPID();
-      md.setSpeeds(-(370 + tickError ), 379 - tickError ); //lower the right motor speed 397
+      md.setSpeeds(-(384 + tickError ), 364 - tickError ); //lower the right motor speed 397
     }
   }
 }
@@ -173,37 +192,43 @@ void forwardCorrection(int practicalValue) {
   while ( encoder_R_value < practicalValue && encoder_L_value < practicalValue ) {
     tickError = 1 * tuneWithPID2();
     md.setSpeeds(-(Speed - tickError), Speed + tickError);
+    delay(10);
     md.setBrakes(400, 400);
+    delay(5);
   }
   md.setBrakes(400, 400);
   while (encoder_L_value < practicalValue ) {
     md.setSpeeds(-Speed, 0);
+    delay(10);
     md.setBrakes(400, 400);
+    delay(5);
   }
   md.setBrakes(400, 400);
   while (encoder_R_value < practicalValue) {
     md.setSpeeds(0, Speed);
+    delay(10);
     md.setBrakes(400, 400);
+    delay(5);
   }
 }
 
 void rotateLeft()
 {
-  left(620, 380);   //620 380 ORIGINAL
+  left(726, 380);   //620 380 ORIGINAL
   md.setBrakes(400, 400);
-  turnLeftCorrection(741); //741 ORIGINAL
-  delay(small_delay_between_moves);
-  forward(10, 80);
+//  turnLeftCorrection(735); //741 ORIGINAL
+//  delay(small_delay_between_moves);
+//  forward(10, 80);
   md.setBrakes(400, 400);
 }
 
 void rotateRight()              //for exploration
 {
-  right(647, 380); //647 380 ORIGINAL
+  right(735, 380); //647 380 ORIGINAL
   md.setBrakes(400, 400);
-  turnRightCorrection(736);  //736 ORIGINAL
-  delay(small_delay_between_moves);
-  forward(10, 80);
+//  turnRightCorrection(739);  //736 ORIGINAL
+//  delay(small_delay_between_moves);
+//  forward(10, 80);
   md.setBrakes(400, 400);
 
 }
@@ -363,7 +388,7 @@ int getObstacleGridsAway(int pin, int type)
   int distance = getMedianDistance(pin, type);
   if (type == 1080)
   {
-    if (distance < 13)          return 1;
+    if (distance < 12)          return 1;
     else if (distance < 23)   return 2;
     else if (distance < 33)   return 3;
     else return 0;
@@ -424,6 +449,7 @@ boolean sideCanAlign() {
 void gotWallThenAlign() {      //function returns true if can align front or side, false if cannot align
 
   if (sideCanAlign() || frontCanAlign()) {
+    delay(small_delay_before_reading_sensor);
     if (sideCanAlign()) {
       alignSideAngle();
     }
@@ -498,7 +524,7 @@ void alignFrontAngle() {
   }
   md.setBrakes(400, 400);
   delay(small_delay_between_moves);
-  while (getMedianDistance(front_middle_sensor_pin, 1080) > 6 && getMedianDistance(front_middle_sensor_pin, 1080) < 10)
+  while (getMedianDistance(front_middle_sensor_pin, 1080) > 6 && getMedianDistance(front_middle_sensor_pin, 1080) < 12)
 
   {
     forward(1, 80);
