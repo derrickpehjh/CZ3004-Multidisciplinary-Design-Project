@@ -101,7 +101,7 @@ void loop()
             gotWallThenAlign();
             delay(small_delay_before_reading_sensor);
             rotateLeft();
-            delay(small_delay_between_moves);
+            delay(2000);
             rotateCheck = false;
             break;
           }
@@ -114,7 +114,7 @@ void loop()
             gotWallThenAlign();
             delay(small_delay_before_reading_sensor);
             rotateRight();
-            //            delay(small_delay_before_reading_sensor);
+            delay(2000);
             gotWallThenAlign();
             rotateCheck = false;
             break;
@@ -127,12 +127,12 @@ void loop()
           }
         case 'A':                     //Read Sensors
           {
-            //            Serial.println(getMedianDistance(0, 1080));
-            //            Serial.println(getMedianDistance(1, 1080));
-            //            Serial.println(getMedianDistance(2, 1080));
-            //            Serial.println(getMedianDistance(3, 1080));
-            //            Serial.println(getMedianDistance(4, 1080));
-            //            Serial.println(getMedianDistance(5, 20150));
+//                        Serial.println(getMedianDistance(0, 1080));
+//                        Serial.println(getMedianDistance(1, 1080));
+//                        Serial.println(getMedianDistance(2, 1080));
+//                        Serial.println(getMedianDistance(3, 1080));
+//                        Serial.println(getMedianDistance(4, 1080));
+//                        Serial.println(getMedianDistance(5, 20150));
             readAllSensors();
             break;
           }
@@ -157,9 +157,9 @@ void moveForward(int gridss)
   forward(425 + 600 * (gridss - 1), 380);
   md.setBrakes(400, 400);
   forwardCorrection(535 + 600 * (gridss - 1)); //510 original
-  //  Serial.print(encoder_L_value);
-  //  Serial.print(" : ");
-  //  Serial.println(encoder_R_value);
+//    Serial.print(encoder_L_value);
+//    Serial.print(" : ");
+//    Serial.println(encoder_R_value);
 }
 
 void forward(int value, int Speed)
@@ -173,8 +173,9 @@ void forward(int value, int Speed)
   }
   else {
     while ( encoder_L_value < value || encoder_R_value < value ) {
-      tickError = 3 * tuneWithPID();
-      md.setSpeeds(-(384 + tickError ), 364 - tickError ); //lower the right motor speed 397
+//      tickError = 3 * tuneWithPID();      // ORIGINAL
+      tickError = 5 * tuneWithPID();
+      md.setSpeeds(-(390 + tickError ), 360 - tickError ); //lower the right motor speed 397
     }
   }
 }
@@ -214,7 +215,7 @@ void forwardCorrection(int practicalValue) {
 
 void rotateLeft()
 {
-  left(726, 380);   //620 380 ORIGINAL
+  left(722, 380);   //620 380 ORIGINAL
   md.setBrakes(400, 400);
 //  turnLeftCorrection(735); //741 ORIGINAL
 //  delay(small_delay_between_moves);
@@ -224,7 +225,7 @@ void rotateLeft()
 
 void rotateRight()              //for exploration
 {
-  right(735, 380); //647 380 ORIGINAL
+  right(726, 380); //647 380 ORIGINAL
   md.setBrakes(400, 400);
 //  turnRightCorrection(739);  //736 ORIGINAL
 //  delay(small_delay_between_moves);
